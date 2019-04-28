@@ -4,15 +4,16 @@ from deap import creator
 from deap import tools
 from enum import Enum
 import random
+import numpy
 
 grid = None
 
 # register operators & create toolbox
 toolbox = base.Toolbox()
-toolbox.register('crossover', PICK_A_CROSSOVER_FUNCTION)
+#toolbox.register('crossover', PICK_A_CROSSOVER_FUNCTION)
 # Recommend altering either cxPartialyMatched, cxUniformPartialyMatched, or cxOrdered
-toolbox.register('mutate', PICK_A_MUTATION_FUNCTION)
-toolbox.register('select', SELECT_INDIVIDUALS_TO_BREED)
+#toolbox.register('mutate', PICK_A_MUTATION_FUNCTION)
+#toolbox.register('select', SELECT_INDIVIDUALS_TO_BREED)
 
 # create a lovely enum to hold directions in
 class Direction(Enum):
@@ -60,22 +61,23 @@ def main():
     crossProb = 0.2
     mutProb = 0.2
     generations = 0
-    pop = {}
+    pop = list()
     startPop = 200 # starting population size
 
-    startNode = # fist city here
-    endNode = # second city here
+    startNode = None # fist city here
+    endNode = None # second city here
 
     # open & read file data
     filename = input("Enter the name of your data file")
     inFile = open(filename, "r")
     # CODE FOR FILE READING HERE
-
+    line = inFile.readline()
+    
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
-    width = None
-    height = None
-    blank = Node({})
+    width = 200
+    height = 265
+    blank = Node(0, 0, 0, 0 )
     grid = [[blank for x in range(width)] for y in range(height)]
     nodeToAdd = None
     # now for the randomwalk
