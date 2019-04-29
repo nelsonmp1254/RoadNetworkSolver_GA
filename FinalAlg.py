@@ -3,6 +3,7 @@ from deap import base
 from deap import creator
 from deap import tools
 from enum import Enum
+import csv
 import random
 import numpy
 
@@ -56,7 +57,7 @@ def main():
     height = 264
     blank = Node(0, 0, 0, 0)
     grid = [[blank for x in range(width)] for y in range(height)]
-    with open("C:\\Users\\Michael\\testInput.txt") as file:
+    with open("C:\\Users\\nelsonmp\\testInput.txt") as file:
         reader = csv.reader(file, delimiter="\t")
         d = list(reader)
 
@@ -87,12 +88,6 @@ def main():
 
     startNode = None # fist city here
     endNode = None # second city here
-
-    # open & read file data
-    filename = input("Enter the name of your data file")
-    inFile = open(filename, "r")
-    # CODE FOR FILE READING HERE
-    line = inFile.readline()
     
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
@@ -107,9 +102,9 @@ def main():
     #
     #
 
+    startingPath = [200]
     for i in range(startPop):
         lastNode = startNode
-        startingPath = {}
         while nodeToAdd != endNode:
             dir = random.randint(0, 7)
             xoffset = 0
@@ -142,9 +137,10 @@ def main():
             if lastNode.x + xoffset < len(grid) and lastNode.x + xoffset > 0:
                 if lastNode.y + yoffset < len(grid[1]) and lastNode.y + yoffset > 0:
                     nodeToAdd = grid[lastNode.x + xoffset][lastNode.y + yoffset]
-                    startingPath.append(Node(nodeToAdd))
-        pop.append(Path(startingPath))
+                    startingPath.__add__(Node(nodeToAdd))
+        #pop.append(Path(startingPath))
 
+    print(startingPath[0])
 
 
 
