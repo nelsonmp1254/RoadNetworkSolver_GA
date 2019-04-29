@@ -51,7 +51,28 @@ creator.create('Individual', Path)
 
 
 def main():
+    # Node Generation
+    width = 201
+    height = 264
+    blank = Node(0, 0, 0, 0)
+    grid = [[blank for x in range(width)] for y in range(height)]
+    with open("C:\\Users\\Michael\\testInput.txt") as file:
+        reader = csv.reader(file, delimiter="\t")
+        d = list(reader)
 
+    i = 0  # height / y
+    # print(d[9][11])
+    for k in d:
+        l = 0  # width / x
+        for j in k:
+            grid[i][l] = Node(i, l, d[i][l], Direction.RIGHT)
+            l += 1
+        i += 1
+
+    print(grid[263][200].x)
+    print(grid[263][200].y)
+    print(grid[263][200].prevDir)
+    print(grid[263][200].height)  # last node
     # read in data from file,
     # store data in 'graph'
     # Create starting population of paths via random walk
@@ -75,10 +96,6 @@ def main():
     
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
-    width = 200
-    height = 265
-    blank = Node(0, 0, 0, 0 )
-    grid = [[blank for x in range(width)] for y in range(height)]
     nodeToAdd = None
     # now for the randomwalk
     #
