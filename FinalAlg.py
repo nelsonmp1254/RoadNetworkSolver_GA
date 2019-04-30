@@ -37,15 +37,34 @@ class Node:
         self.height = height
         self.prevDir = prevDir
 
+    def toString(self):
+        return "(" + str(self.x) + "," + str(self.y) + ")"
+
 
 # create custom Individual class
 class Path:
     # takes as args a list of Nodes
+
     def __init__(self, route):
         self.route = route
 
     def addToPath(self, n):
         self.route.append(n)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        num = self.num
+        self.num += 1
+        return num
+
+    def printPath(self):
+        ret = ""
+        for i in self.route:
+            ret +=(i.toString()) + " | "
+
+        return ret
 
 
 creator.create('Individual', Path)
@@ -70,10 +89,10 @@ def main():
             l += 1
         i += 1
 
-    print(grid[263][200].x)
-    print(grid[263][200].y)
-    print(grid[263][200].prevDir)
-    print(grid[263][200].height)  # last node
+    print(grid[262][200].x)
+    print(grid[262][200].y)
+    print(grid[262][200].prevDir)
+    print(grid[262][200].height)  # last node
     # read in data from file,
     # store data in 'graph'
     # Create starting population of paths via random walk
@@ -84,10 +103,10 @@ def main():
     mutProb = 0.2
     generations = 0
     pop = list()
-    startPop = 200 # starting population size
+    startPop = 1 # starting population size
 
-    startNode = None # fist city here
-    endNode = None # second city here
+    startNode = grid[0][0] # fist city here
+    endNode = grid[19][19] # second city here
     
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
@@ -102,49 +121,59 @@ def main():
     #
     #
 
-    startingPath = [200]
+    startingPath = list()
     for i in range(startPop):
         lastNode = startNode
+        prevDir = 2
         while nodeToAdd != endNode:
             dir = random.randint(0, 7)
             xoffset = 0
             yoffset = 0
-            if dir == 0:
+            if dir == 0 :
                 xoffset = 0
                 yoffset = -1
-            elif dir == 1:
+                prevDir = dir
+            elif dir == 1 :
                 xoffset = 1
                 yoffset = -1
-            elif dir == 2:
+                prevDir = dir
+            elif dir == 2 :
                 xoffset = 1
                 yoffset = 0
-            elif dir == 3:
+                prevDir = dir
+            elif dir == 3 :
                 xoffset = 1
                 yoffset = 1
-            elif dir == 4:
+                prevDir = dir
+            elif dir == 4 :
                 xoffset = 0
                 yoffset = 1
-            elif dir == 5:
+                prevDir = dir
+            elif dir == 5 :
                 xoffset = -1
                 yoffset = 1
-            elif dir == 6:
+                prevDir = dir
+            elif dir == 6 :
                 xoffset = -1
                 yoffset = 0
-            elif dir == 7:
+                prevDir = dir
+            elif dir == 7 :
                 xoffset = -1
                 yoffset = -1
-
-            if lastNode.x + xoffset < len(grid) and lastNode.x + xoffset > 0:
-                if lastNode.y + yoffset < len(grid[1]) and lastNode.y + yoffset > 0:
+                prevDir = dir
+            else:
+                xoffset = 1
+                yoffset = 1
+            prevDir = dir
+            if lastNode.x + xoffset < 20 and lastNode.x + xoffset > 0:
+                if lastNode.y + yoffset < 20 and lastNode.y + yoffset > 0:
                     nodeToAdd = grid[lastNode.x + xoffset][lastNode.y + yoffset]
-                    startingPath.__add__(Node(nodeToAdd))
-        #pop.append(Path(startingPath))
+                    if not pop.__contains__(nodeToAdd):
+                        lastNode = nodeToAdd
+                        startingPath.append(nodeToAdd)
 
-    print(startingPath[0])
-
-
-
-
+        pop.append(Path(startingPath))
+    print(pop[0].route[len(pop[0].route) - 1].toString())
 
 if __name__ == "__main__":
     main()
