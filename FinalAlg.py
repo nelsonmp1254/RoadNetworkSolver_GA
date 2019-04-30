@@ -65,6 +65,31 @@ class Path:
         return ret
 
 
+def createAdjMatrix(grid):
+
+    cols = len(grid[0])
+    rows = len(grid)
+
+    matrix = [ [0]* (cols * rows) for _ in range(rows * cols)]
+
+    for i in range(rows):
+        for j in range(cols):       # Replace 1s with cost of travel between node [j][i] and [j +- 1/0][i +- 1/0]
+            if i - 1 > 0:
+                matrix[j][i - 1] = 1
+                if j - 1 > 0:
+                    matrix[j - 1][i - 1] = 1
+            if i + 1 < 200:
+                matrix[j][i + 1] = 1
+                if j + 1 < 200:
+                    matrix[j + 1][i + 1] = 1
+            if j - 1 > 0:
+                matrix[j - 1][i] = 1
+            if j + 1 < 263:
+                matrix[j + 1][i] = 1
+    matrix[263][200] = 10
+    #print(len(matrix))
+
+
 # returns index of the crossover point in p1 and in p2 as tuple
 # takes two Paths as params
 def pathsCross(p1, p2):
@@ -115,9 +140,21 @@ def connectPaths(p1, n, p2):
 
 def cleanup(p1):
 
-    for i in range(len(p1)):
-        for h in reversed(range(len(p1) - 1, 0, -1)):
-            print(str(p1[h].x) + " -" + str(h))
+    i = 0
+    while True:
+        if(i >= len(p1)):
+            break
+        for j in range(len(p1)):
+            for h in reversed(range(len(p1) - 1, 0, -1)):
+                if p1[h] == p1[j] and j != h:
+                    p1 = p1[:j] + p1[h:]
+                    print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
+                    break
+            break
+        i += 1
+    return p1
+
+
 
 
 def mutate(p1):
@@ -135,8 +172,8 @@ creator.create('Individual', Path)
 
 def main():
     # Node Generation
-    width = 201
-    height = 264
+    width = 50
+    height = 50
     blank = Node(0, 0, 0, 0)
     grid = [[blank for x in range(width)] for y in range(height)]
     with open("C:\\Users\\nelsonmp\\testInput.txt") as file:
@@ -152,10 +189,10 @@ def main():
             l += 1
         i += 1
 
-    print(grid[262][200].x)
-    print(grid[262][200].y)
-    print(grid[262][200].prevDir)
-    print(grid[262][200].height)  # last node
+    print(grid[49][49].x)
+    print(grid[49][49].y)
+    print(grid[49][49].prevDir)
+    print(grid[49][49].height)  # last node
     # read in data from file,
     # store data in 'graph'
     # Create starting population of paths via random walk
@@ -235,20 +272,17 @@ def main():
                     nodeToAdd = grid[lastNode.x + xoffset][lastNode.y + yoffset]
                     lastNode = nodeToAdd
                     startingPath.append(nodeToAdd)
-
-        print(len(startingPath))
         pop.append(Path(startingPath))
         startingPath = []
 
 
-    print(len(pop))
-    for i in range(len(pop)):
-        print(pop[i].route[len(pop[i].route) - 1].toString())
-        print(len(pop[i].route))
 
-    #cleanup(pop[0].route)
+
     print(len(pop[0].route))
-
+    pop[0] = Path(cleanup(pop[0].route))
+    print(len(pop[0].route))
+    print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
+    print(pop[0].printPath())
 
 
 
