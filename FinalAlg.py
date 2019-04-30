@@ -27,7 +27,6 @@ class Direction(Enum):
     LEFT = 180,
     TOP_LEFT = 135
 
-
 # create Node class
 class Node:
 
@@ -64,32 +63,6 @@ class Path:
             ret +=(i.toString()) + " | "
         return ret
 
-
-def createAdjMatrix(grid):
-
-    cols = len(grid[0])
-    rows = len(grid)
-
-    matrix = [ [0]* (cols * rows) for _ in range(rows * cols)]
-
-    for i in range(rows):
-        for j in range(cols):       # Replace 1s with cost of travel between node [j][i] and [j +- 1/0][i +- 1/0]
-            if i - 1 > 0:
-                matrix[j][i - 1] = 1
-                if j - 1 > 0:
-                    matrix[j - 1][i - 1] = 1
-            if i + 1 < 200:
-                matrix[j][i + 1] = 1
-                if j + 1 < 200:
-                    matrix[j + 1][i + 1] = 1
-            if j - 1 > 0:
-                matrix[j - 1][i] = 1
-            if j + 1 < 263:
-                matrix[j + 1][i] = 1
-    matrix[263][200] = 10
-    #print(len(matrix))
-
-
 # returns index of the crossover point in p1 and in p2 as tuple
 # takes two Paths as params
 def pathsCross(p1, p2):
@@ -117,29 +90,7 @@ def breed(p1, p2):
     kids = (Path(child1), Path(child2))
     return kids
 
-
-def shortestPath(p1, p2):
-    return 10
-
-
-def connectPaths(p1, n, p2):
-
-    listA = p1[len(p1) - 3 : len(p1)]
-    listB = p2[0 : 3]
-
-    min = 10000000.0
-    for x in listA:
-        cost = 10
-        aConnect = shorestPath(x,n)
-
-
-    for x in listB:
-        bConnect = shortestPath(x,n)
-
-    return p1.append(aConnect).appent(n).append(bConnect).append(p2)
-
 def cleanup(p1):
-
     i = 0
     while True:
         if(i >= len(p1)):
@@ -154,9 +105,6 @@ def cleanup(p1):
         i += 1
     return p1
 
-
-
-
 def mutate(p1):
     mutateFactor = 0.2
     min = 1000000000.0
@@ -166,9 +114,7 @@ def mutate(p1):
             if cost < min:
                 return cost
 
-
 creator.create('Individual', Path)
-
 
 def main():
     # Node Generation
@@ -275,16 +221,13 @@ def main():
         pop.append(Path(startingPath))
         startingPath = []
 
-
-
-
     print(len(pop[0].route))
     pop[0] = Path(cleanup(pop[0].route))
     print(len(pop[0].route))
     print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
     print(pop[0].printPath())
-
-
+    mat = createAdjMatrix(grid)
+    print(len(mat[0]))
 
 
 if __name__ == "__main__":
