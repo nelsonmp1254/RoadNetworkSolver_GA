@@ -12,7 +12,7 @@ grid = None
 # register operators & create toolbox
 toolbox = base.Toolbox()
 #toolbox.register('crossover', PICK_A_CROSSOVER_FUNCTION)
-# Recommend altering either cxPartialyMatched, cxUniformPartialyMatched, or cxOrdered
+#Recommend altering either cxPartialyMatched, cxUniformPartialyMatched, or cxOrdered
 #toolbox.register('mutate', PICK_A_MUTATION_FUNCTION)
 #toolbox.register('select', SELECT_INDIVIDUALS_TO_BREED)
 
@@ -64,6 +64,72 @@ class Path:
             ret +=(i.toString()) + " | "
         return ret
 
+
+# returns index of the crossover point in p1 and in p2 as tuple
+# takes two Paths as params
+def pathsCross(p1, p2):
+    for i in range(0, len(p1.route)):
+        for j in range(0, len(p2.route)):
+            if i.equals(j):
+                cross = (i, j)
+            else:
+                cross = (-1, -1)
+    return cross
+
+# returns a tuple containing two Path objects
+# takes two Path objects as params
+def breed(p1, p2):
+    child1 = list()
+    child2 = list()
+    parent1 = p1.route
+    parent2 = p2.route
+    crosspt = pathsCross(p1, p2)
+    if crosspt != (-1, -1):
+        child1.append(parent1[:crosspt[0]])
+        child1.append(parent2[crosspt[1]:])
+        child2.append(parent2[:crosspt[1]])
+        child2.append(parent1[crosspt[0]:])
+    kids = (Path(child1), Path(child2))
+    return kids
+
+
+def shortestPath(p1, p2):
+    return 10
+
+
+def connectPaths(p1, n, p2):
+
+    listA = p1[len(p1) - 3 : len(p1)]
+    listB = p2[0 : 3]
+
+    min = 10000000.0
+    for x in listA:
+        cost = 10
+        aConnect = shorestPath(x,n)
+
+
+    for x in listB:
+        bConnect = shortestPath(x,n)
+
+    return p1.append(aConnect).appent(n).append(bConnect).append(p2)
+
+def cleanup(p1):
+
+    for i in range(len(p1)):
+        for h in reversed(range(len(p1) - 1, 0, -1)):
+            print(str(p1[h].x) + " -" + str(h))
+
+
+def mutate(p1):
+    mutateFactor = 0.2
+    min = 1000000000.0
+    for x in range(len(p1)):
+        if (random.randint(1, 10) < (mutateFactor * 10)):
+            cost = 10       # replace with cost fn
+            if cost < min:
+                return cost
+
+
 creator.create('Individual', Path)
 
 
@@ -103,7 +169,7 @@ def main():
     startPop = 20 # starting population size
 
     startNode = grid[0][0] # fist city here
-    endNode = grid[99][99] # second city here
+    endNode = grid[4][4] # second city here
     
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
@@ -121,6 +187,9 @@ def main():
     for i in range(startPop):
         lastNode = startNode
         prevDir = 2
+        startNode = grid[0][0]  # fist city here
+        endNode = grid[4][4]  # second city here
+        nodeToAdd = None
         while nodeToAdd != endNode:
             dir = random.randint(0, 7)
             xoffset = 0
@@ -161,18 +230,24 @@ def main():
                 xoffset = 1
                 yoffset = 1
             prevDir = dir
-            if lastNode.x + xoffset < 100 and lastNode.x + xoffset > 0:
-                if lastNode.y + yoffset < 100 and lastNode.y + yoffset > 0:
+            if lastNode.x + xoffset < 5 and lastNode.x + xoffset > 0:
+                if lastNode.y + yoffset < 5 and lastNode.y + yoffset > 0:
                     nodeToAdd = grid[lastNode.x + xoffset][lastNode.y + yoffset]
                     lastNode = nodeToAdd
                     startingPath.append(nodeToAdd)
 
+        print(len(startingPath))
         pop.append(Path(startingPath))
+        startingPath = []
 
 
     print(len(pop))
     for i in range(len(pop)):
         print(pop[i].route[len(pop[i].route) - 1].toString())
+        print(len(pop[i].route))
+
+    #cleanup(pop[0].route)
+    print(len(pop[0].route))
 
 
 
