@@ -40,7 +40,6 @@ class Node:
     def toString(self):
         return "(" + str(self.x) + "," + str(self.y) + ")"
 
-
 # create custom Individual class
 class Path:
     # takes as args a list of Nodes
@@ -63,9 +62,7 @@ class Path:
         ret = ""
         for i in self.route:
             ret +=(i.toString()) + " | "
-
         return ret
-
 
 creator.create('Individual', Path)
 
@@ -103,10 +100,10 @@ def main():
     mutProb = 0.2
     generations = 0
     pop = list()
-    startPop = 1 # starting population size
+    startPop = 20 # starting population size
 
     startNode = grid[0][0] # fist city here
-    endNode = grid[19][19] # second city here
+    endNode = grid[99][99] # second city here
     
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
@@ -118,7 +115,6 @@ def main():
     #    6-   Node  -2
     #     /    |    \
     #    5     4     3
-    #
     #
 
     startingPath = list()
@@ -165,15 +161,22 @@ def main():
                 xoffset = 1
                 yoffset = 1
             prevDir = dir
-            if lastNode.x + xoffset < 20 and lastNode.x + xoffset > 0:
-                if lastNode.y + yoffset < 20 and lastNode.y + yoffset > 0:
+            if lastNode.x + xoffset < 100 and lastNode.x + xoffset > 0:
+                if lastNode.y + yoffset < 100 and lastNode.y + yoffset > 0:
                     nodeToAdd = grid[lastNode.x + xoffset][lastNode.y + yoffset]
-                    if not pop.__contains__(nodeToAdd):
-                        lastNode = nodeToAdd
-                        startingPath.append(nodeToAdd)
+                    lastNode = nodeToAdd
+                    startingPath.append(nodeToAdd)
 
         pop.append(Path(startingPath))
-    print(pop[0].route[len(pop[0].route) - 1].toString())
+
+
+    print(len(pop))
+    for i in range(len(pop)):
+        print(pop[i].route[len(pop[i].route) - 1].toString())
+
+
+
+
 
 if __name__ == "__main__":
     main()
