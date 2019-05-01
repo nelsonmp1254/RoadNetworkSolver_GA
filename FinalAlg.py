@@ -23,11 +23,10 @@ class Direction(Enum):
 
 # create Node class
 class Node:
-    def __init__(self, x, y, height, prevDir):
+    def __init__(self, x, y, height):
         self.x = x
         self.y = y
         self.height = height
-        self.prevDir = prevDir
 
     def toString(self):
         return "(" + str(self.x) + "," + str(self.y) + ")"
@@ -96,29 +95,59 @@ def breed(p1, p2):
     kids = (Path(child1), Path(child2))
     return kids
 
+def prevDir(n1, n2):
+    xChange = n1.x - n2.x
+    yChange = n1.y - n2.y
+
+    if xChange == 1:
+        if yChange == 1:
+            return Direction.BOTTOM_RIGHT
+        elif yChange == 0:
+            return Direction.RIGHT
+        elif yChange == -1:
+            return Direction.TOP_RIGHT
+    elif xChange == 0:
+        if yChange == 1:
+            return Direction.BOTTOM
+        elif yChange == -1:
+            return Direction.TOP
+    elif xChange == -1:
+        if yChange == 1:
+            return Direction.BOTTOM_LEFT
+        elif yChange == 0:
+            return Direction.LEFT
+        elif yChange == -1:
+            return Direction.TOP_LEFT
 
 def mutate(p1, mutateFactor=0.2):
     for x in range(1, len(p1) - 1):
         if random.randint(1, 10) < (mutateFactor * 10) and x - 1 > 0 and x + 1 < 49:
             oldX = p1[x].x
             oldY = p1[x].y
+            currentNode = p[x]
+            nextNode = p[x+1]
+            prevDir = Direction.BOTTOM
+            currentDir = Direction.BOTTOM
+            xChange = p[x].x - p[x + 1]
+
             global grid
             xoffset = 0
             yoffset = 0
             if ((p1[x].prevDir == Direction.TOP and p1[x + 1].prevDir == Direction.TOP) or \
-                     (p1[x].prevDir == Direction.BOTTOM and p1[x + 1].prevDir == Direction.BOTTOM)):
-                flag = random.randint(0, 1)
+                     (p1[x].prevDir == Direction.BOTTOM and p1[x + 1].prevDir == Direction.BOTTOM)):        #  |
+                flag = random.randint(0, 1)                                                                 #  |
                 if (flag == 1):
                     xoffset = 1
                 else:
                     xoffset = -1
             if ((p1[x].prevDir == Direction.RIGHT and p1[x + 1].prevDir == Direction.RIGHT) or \
-                    (p1[x].prevDir == Direction.LEFT and p1[x + 1].prevDir == Direction.LEFT)):
+                    (p1[x].prevDir == Direction.LEFT and p1[x + 1].prevDir == Direction.LEFT)):             # --
                 flag = random.randint(0, 1)
                 if (flag == 1):
                     yoffset = 1
                 else:
                     yoffset = -1
+            if()
 
             cost = calcWeights(p1[x - 1], p1[x]) + calcWeights(p1[x], p1[x + 1])
             newCost = cost
@@ -138,7 +167,7 @@ def mutate(p1, mutateFactor=0.2):
 # distance, travel time, and cost to create
 # dataPointOffset is the real-world distance between two data points on the same orthogonal line IN FEET
 # distWeight, timeWeight, and costWeight must sum to 1.0
-def calcWeights(node1, node2, dataPointOffset = 100, distWeight = 0.3, inclWeight = 0.2, costWeight = 0.2):
+def calcWeights(node1, node2, node3, dataPointOffset = 100, distWeight = 0.3, inclWeight = 0.2, costWeight = 0.2):
     # Average cost of a mile of 4-land divided highway through semi-urban
     # and non-mountainous terrain
     # See https://www.arkansashighways.com/roadway_design_division/Cost%20per%20Mile%20(JULY%202014).pdf
