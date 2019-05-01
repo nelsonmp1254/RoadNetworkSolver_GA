@@ -5,8 +5,7 @@ import random
 import numpy
 import math
 
-grid = None
-
+grid = []
 # create a lovely enum to hold directions in
 class Direction(Enum):
     TOP = 90
@@ -55,16 +54,15 @@ class Path:
 #Cleans up random walk. Eliminates loops. Variable effectiveness depending on the random walk
 def cleanup(p1):
     i = 0
-    while True:
-        if(i >= len(p1)):
-            break
+    while i < len(p1):
         for j in range(len(p1)):
             for h in reversed(range(len(p1) - 1, 0, -1)):
-                if p1[h] == p1[j] and j != h:
+                if j < h and j < len(p1) and h < len(p1) and p1[h] == p1[j] and j != h:
                     p1 = p1[:j] + p1[h:]
                     print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
+                    i = 0
                     break
-            break
+
         i += 1
     return p1
 
@@ -95,13 +93,36 @@ def breed(p1, p2):
     kids = (Path(child1), Path(child2))
     return kids
 
-def mutate(p1, mutateFactor = 0.2):
+
+def mutate(p1, mutateFactor=0.2):
     for x in range(1, len(p1) - 1):
-        if (random.randint(1, 10) < (mutateFactor * 10)):
-            cost = 10       # replace with cost fn of p1
-            newCost = 12    # replace with cost fn of newP1
-            if cost < min:
-                return cost
+        if random.randint(1, 10) < (mutateFactor * 10) and x - 1 > 0 and x + 1 < 49:
+            oldX = p1[x].x
+            oldY = p1[x].y
+            global grid
+            xoffset = 0
+            yoffset = 0
+            if ((p1[x].prevDir == Direction.TOP and p1[x + 1].prevDir == Direction.TOP) or \
+                     (p1[x].prevDir == Direction.BOTTOM and p1[x + 1].prevDir == Direction.BOTTOM)):
+                flag = random.randint(0, 1)
+                if (flag == 1):
+                    xoffset = 1
+                else:
+                    xoffset = -1
+
+            cost = calcWeights(p1[x - 1], p1[x]) + calcWeights(p1[x], p1[x + 1])
+            newCost = cost
+
+            if p1[x].x + xoffset > 0 and p1[x].x + xoffset < 49 and \
+                    p1[x].y + yoffset > 0 and p1[x].y + yoffset < 49:
+
+                newNode = grid[p1[x].y + yoffset][p1[x].x + xoffset]
+
+                newCost = calcWeights(p1[x - 1], newNode) + calcWeights(newNode, p1[x+1])
+
+            if newCost < cost:
+                p1[x] = newNode
+
 
 # Calculates the weights between nodes based on curvature,
 # distance, travel time, and cost to create
@@ -122,6 +143,8 @@ def calcWeights(node1, node2, dataPointOffset = 100, distWeight = 0.3, inclWeigh
     xdiff = abs(node1.x - node2.x) * dataPointOffset
     ydiff = abs(node1.y - node2.y) * dataPointOffset
     dist = (xdiff)**2 + (ydiff)**2
+    if(dist < 1):
+        dist = 1
     dist = math.sqrt(dist)
     grade = (grade / dist) * 100 # grade as percentage
 
@@ -160,6 +183,7 @@ def main():
     width = 50
     height = 50
     blank = Node(0, 0, 0, 0)
+    global grid
     grid = [[blank for x in range(width)] for y in range(height)]
     with open("C:\\Users\\nelsonmp\\testInput.txt") as file:
         reader = csv.reader(file, delimiter="\t")
@@ -170,12 +194,12 @@ def main():
     for k in d:
         l = 0  # width / x
         for j in k:
-            grid[i][l] = Node(i, l, d[i][l], Direction.RIGHT)
+            grid[i][l] = Node(l, i, d[i][l], Direction.RIGHT)
             l += 1
         i += 1
 
-    print(grid[49][49].x)
-    print(grid[49][49].y)
+    print(grid[0][0].x)
+    print(grid[0][0].y)
     print(grid[49][49].prevDir)
     print(grid[49][49].height)  # last node
     # read in data from file,
@@ -212,6 +236,7 @@ def main():
         startNode = grid[0][0]  # fist city here
         endNode = grid[4][4]  # second city here
         nodeToAdd = None
+        #random.seed( 30 )
         while nodeToAdd != endNode:
             dir = random.randint(0, 7)
             xoffset = 0
@@ -264,13 +289,19 @@ def main():
     pop[0] = Path(cleanup(pop[0].route))
     print(len(pop[0].route))
     print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
+
+
+    cleanup(pop[0].route)
+
     print(pop[0].printPath())
 
+    print("==========")
+    print(pop[0].printPath())
 
-    for x in range(len(pop[0].route) - 1):
-        print(calcWeights(pop[0].route[x], pop[0].route[x + 1]))
+    for x in range(20):
+        mutate(pop[0].route)
 
-
-
+    pop[0] = Path(cleanup(pop[0].route))
+    print(pop[0].printPath())
 if __name__ == "__main__":
     main()
