@@ -1,20 +1,10 @@
 # import necessary dependencies
-from deap import base
-from deap import creator
-from deap import tools
 from enum import Enum
 import csv
 import random
 import numpy
 
 grid = None
-
-# register operators & create toolbox
-toolbox = base.Toolbox()
-#toolbox.register('crossover', PICK_A_CROSSOVER_FUNCTION)
-#Recommend altering either cxPartialyMatched, cxUniformPartialyMatched, or cxOrdered
-#toolbox.register('mutate', PICK_A_MUTATION_FUNCTION)
-#toolbox.register('select', SELECT_INDIVIDUALS_TO_BREED)
 
 # create a lovely enum to hold directions in
 class Direction(Enum):
@@ -29,7 +19,6 @@ class Direction(Enum):
 
 # create Node class
 class Node:
-
     def __init__(self, x, y, height, prevDir):
         self.x = x
         self.y = y
@@ -42,26 +31,37 @@ class Node:
 # create custom Individual class
 class Path:
     # takes as args a list of Nodes
-
     def __init__(self, route):
         self.route = route
-
     def addToPath(self, n):
         self.route.append(n)
-
     def __iter__(self):
         return self
-
     def __next__(self):
         num = self.num
         self.num += 1
         return num
-
     def printPath(self):
         ret = ""
         for i in self.route:
             ret +=(i.toString()) + " | "
         return ret
+
+#Cleans up random walk. Eliminates loops. Variable effectiveness depending on the random walk
+def cleanup(p1):
+    i = 0
+    while True:
+        if(i >= len(p1)):
+            break
+        for j in range(len(p1)):
+            for h in reversed(range(len(p1) - 1, 0, -1)):
+                if p1[h] == p1[j] and j != h:
+                    p1 = p1[:j] + p1[h:]
+                    print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
+                    break
+            break
+        i += 1
+    return p1
 
 # returns index of the crossover point in p1 and in p2 as tuple
 # takes two Paths as params
@@ -90,31 +90,65 @@ def breed(p1, p2):
     kids = (Path(child1), Path(child2))
     return kids
 
-def cleanup(p1):
-    i = 0
-    while True:
-        if(i >= len(p1)):
-            break
-        for j in range(len(p1)):
-            for h in reversed(range(len(p1) - 1, 0, -1)):
-                if p1[h] == p1[j] and j != h:
-                    p1 = p1[:j] + p1[h:]
-                    print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
-                    break
-            break
-        i += 1
-    return p1
-
-def mutate(p1):
-    mutateFactor = 0.2
-    min = 1000000000.0
+def mutate(p1, mutateFactor = 0.2):
     for x in range(len(p1)):
         if (random.randint(1, 10) < (mutateFactor * 10)):
-            cost = 10       # replace with cost fn
+            cost = 10       # replace with cost fn of p1
+            newCost = 12    # replace with cost fn of newP1
             if cost < min:
                 return cost
 
-creator.create('Individual', Path)
+# Calculates the weights between nodes based on curvature,
+# distance, travel time, and cost to create
+# dataPointOffset is the real-world distance between two data points on the same orthogonal line IN FEET
+# distWeight, timeWeight, and costWeight must sum to 1.0
+def calcWeights(node1, node2, dataPointOffset = 100, distWeight = 0.3, inclWeight = 0.2, costWeight = 0.2):
+    # Average cost of a mile of 4-land divided highway through semi-urban
+    # and non-mountainous terrain
+    # See https://www.arkansashighways.com/roadway_design_division/Cost%20per%20Mile%20(JULY%202014).pdf
+    # for details
+    COST_PER_MILE = 5675000
+
+    # avgSpeed is the average speed limit of US 4-lane divided highways by default, but
+    # can be changed if desired
+    # CHANGE THIS FROM 3D DISTANCE TO 2D DIST AND CALCULATE ELEVATION DIFF
+    # TO DEAL W/ROAD GRADING
+    grade = abs(node1.height - node2.height)
+    xdiff = abs(node1.x - node2.x) * dataPointOffset
+    ydiff = abs(node1.y - node2.y) * dataPointOffset
+    dist = (xdiff)**2 + (ydiff)**2
+    dist = math.sqrt(dist)
+    grade = (grade / dist) * 100 # grade as percentage
+
+    sum = dist * distWeight + grade * inclWeight
+
+    # difference in road angles: higher = less direct route
+    curve = abs(node1.prevDir - node2.prevDir) % 360
+    cfactor = (360 - curve) if curve > 180 else curve
+
+    # calculate highway segment speed based on curvature
+    # V**2  = 15(0.01 * e + f) * R
+    # side-friction constants from:
+    # https://www.webpages.uidaho.edu/niatt_labmanual/chapters/geometricdesign/theoryandconcepts/SuperElevationAndSideFriction.htm
+    # Formula from:
+    # https://safety.fhwa.dot.gov/speedmgt/ref_mats/fhwasa1122/ch3.cfm
+
+    # superelevation information
+    # https://safety.fhwa.dot.gov/geometric/pubs/mitigationstrategies/chapter3/3_superelevation.cfm
+    # f = 0.10 # side friction constant
+    # R = 2740
+    # vsquared = 15 * (f + 0.06) * R
+    # v = math.sqrt(vsquared)
+    CURVE_SPEED = 53.64 # determined by above calculations
+    if cfactor > 0: # if road curves
+        # reduce speed to curve speed
+        travelTime = dist / CURVE_SPEED
+        COST_PER_MILE *= 1.1
+    else:
+        travelTime = dist / 65
+    # add in cost of the road and curvature factors
+    sum += dist * COST_PER_MILE * costWeight + travelTime
+    return sum
 
 def main():
     # Node Generation
@@ -228,7 +262,6 @@ def main():
     print(pop[0].printPath())
     mat = createAdjMatrix(grid)
     print(len(mat[0]))
-
 
 if __name__ == "__main__":
     main()
