@@ -54,15 +54,18 @@ class Path:
 #Cleans up random walk. Eliminates loops. Variable effectiveness depending on the random walk
 def cleanup(p1):
     i = 0
-    while i < len(p1):
+    j = 0
+    flag = False
+    while i < len(p1) :
         for j in range(len(p1)):
-            for h in reversed(range(len(p1) - 1, 0, -1)):
+            for h in reversed(range(len(p1), 0, -1)):
                 if j < h and j < len(p1) and h < len(p1) and p1[h] == p1[j] and j != h:
                     p1 = p1[:j] + p1[h:]
                     print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
                     i = 0
-                    break
-
+                    flag = True
+                    if(flag):
+                        break
         i += 1
     return p1
 
@@ -109,6 +112,13 @@ def mutate(p1, mutateFactor=0.2):
                     xoffset = 1
                 else:
                     xoffset = -1
+            if ((p1[x].prevDir == Direction.RIGHT and p1[x + 1].prevDir == Direction.RIGHT) or \
+                    (p1[x].prevDir == Direction.LEFT and p1[x + 1].prevDir == Direction.LEFT)):
+                flag = random.randint(0, 1)
+                if (flag == 1):
+                    yoffset = 1
+                else:
+                    yoffset = -1
 
             cost = calcWeights(p1[x - 1], p1[x]) + calcWeights(p1[x], p1[x + 1])
             newCost = cost
@@ -119,7 +129,7 @@ def mutate(p1, mutateFactor=0.2):
                 newNode = grid[p1[x].y + yoffset][p1[x].x + xoffset]
 
                 newCost = calcWeights(p1[x - 1], newNode) + calcWeights(newNode, p1[x+1])
-
+                print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
             if newCost < cost:
                 p1[x] = newNode
 
@@ -279,29 +289,25 @@ def main():
             prevDir = dir
             if lastNode.x + xoffset < 5 and lastNode.x + xoffset > 0:
                 if lastNode.y + yoffset < 5 and lastNode.y + yoffset > 0:
-                    nodeToAdd = grid[lastNode.x + xoffset][lastNode.y + yoffset]
+                    nodeToAdd = grid[lastNode.y + yoffset][lastNode.x + xoffset]
                     lastNode = nodeToAdd
                     startingPath.append(nodeToAdd)
         pop.append(Path(startingPath))
         startingPath = []
 
     print(len(pop[0].route))
+    #print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
+
+    print(pop[0].printPath())
     pop[0] = Path(cleanup(pop[0].route))
-    print(len(pop[0].route))
-    print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
-
-
-    cleanup(pop[0].route)
 
     print(pop[0].printPath())
-
-    print("==========")
-    print(pop[0].printPath())
-
     for x in range(20):
         mutate(pop[0].route)
 
     pop[0] = Path(cleanup(pop[0].route))
     print(pop[0].printPath())
+
+
 if __name__ == "__main__":
     main()
