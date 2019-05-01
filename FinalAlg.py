@@ -129,7 +129,7 @@ def mutate(p1, mutateFactor=0.2):
                 newNode = grid[p1[x].y + yoffset][p1[x].x + xoffset]
 
                 newCost = calcWeights(p1[x - 1], newNode) + calcWeights(newNode, p1[x+1])
-                print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
+                #print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
             if newCost < cost:
                 p1[x] = newNode
 
