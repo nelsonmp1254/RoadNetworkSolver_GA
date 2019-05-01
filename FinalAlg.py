@@ -3,19 +3,24 @@ from enum import Enum
 import csv
 import random
 import numpy
+import math
 
 grid = None
 
 # create a lovely enum to hold directions in
 class Direction(Enum):
-    TOP = 90,
-    TOP_RIGHT = 45,
-    RIGHT = 0,
-    BOTTOM_RIGHT = 315,
-    BOTTOM = 270,
-    BOTTOM_LEFT = 225,
-    LEFT = 180,
+    TOP = 90
+    TOP_RIGHT = 45
+    RIGHT = 0
+    BOTTOM_RIGHT = 315
+    BOTTOM = 270
+    BOTTOM_LEFT = 225
+    LEFT = 180
     TOP_LEFT = 135
+
+    def __int__(self):
+        return self.value
+
 
 # create Node class
 class Node:
@@ -91,7 +96,7 @@ def breed(p1, p2):
     return kids
 
 def mutate(p1, mutateFactor = 0.2):
-    for x in range(len(p1)):
+    for x in range(1, len(p1) - 1):
         if (random.randint(1, 10) < (mutateFactor * 10)):
             cost = 10       # replace with cost fn of p1
             newCost = 12    # replace with cost fn of newP1
@@ -113,7 +118,7 @@ def calcWeights(node1, node2, dataPointOffset = 100, distWeight = 0.3, inclWeigh
     # can be changed if desired
     # CHANGE THIS FROM 3D DISTANCE TO 2D DIST AND CALCULATE ELEVATION DIFF
     # TO DEAL W/ROAD GRADING
-    grade = abs(node1.height - node2.height)
+    grade = abs(int(node1.height) - int(node2.height))
     xdiff = abs(node1.x - node2.x) * dataPointOffset
     ydiff = abs(node1.y - node2.y) * dataPointOffset
     dist = (xdiff)**2 + (ydiff)**2
@@ -123,7 +128,7 @@ def calcWeights(node1, node2, dataPointOffset = 100, distWeight = 0.3, inclWeigh
     sum = dist * distWeight + grade * inclWeight
 
     # difference in road angles: higher = less direct route
-    curve = abs(node1.prevDir - node2.prevDir) % 360
+    curve = abs(node1.prevDir.value - node2.prevDir.value) % 360
     cfactor = (360 - curve) if curve > 180 else curve
 
     # calculate highway segment speed based on curvature
@@ -260,8 +265,12 @@ def main():
     print(len(pop[0].route))
     print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
     print(pop[0].printPath())
-    mat = createAdjMatrix(grid)
-    print(len(mat[0]))
+
+
+    for x in range(len(pop[0].route) - 1):
+        print(calcWeights(pop[0].route[x], pop[0].route[x + 1]))
+
+
 
 if __name__ == "__main__":
     main()
