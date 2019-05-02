@@ -27,7 +27,6 @@ class Node:
         self.x = x
         self.y = y
         self.height = height
-
     def toString(self):
         return "(" + str(self.x) + "," + str(self.y) + ")"
 
@@ -47,58 +46,35 @@ class Path:
     def printPath(self):
         ret = ""
         for i in self.route:
-            ret +=(i.toString()) + " | "
+            ret += i.toString() + " | "
         return ret
+
+def pathPrinter(p1):
+    ret = ""
+    for i in p1.route:
+        ret += grid[i.y][i.x].toString() + " | "
+    return ret
+
+
 
 #Cleans up random walk. Eliminates loops. Variable effectiveness depending on the random walk
 def cleanup(p1):
     i = 0
-    j = 0
-    flag = False
-    while i < len(p1) :
+    while i < len(p1):
         for j in range(len(p1)):
-            for h in reversed(range(len(p1), 0, -1)):
+            for h in reversed(range(len(p1) - 1, 0, -1)):
                 if j < h and j < len(p1) and h < len(p1) and p1[h] == p1[j] and j != h:
                     p1 = p1[:j] + p1[h:]
-                    print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
+                    #print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
                     i = 0
-                    flag = True
-                    if(flag):
-                        break
+                    break
+
         i += 1
     return p1
 
-# returns index of the crossover point in p1 and in p2 as tuple
-# takes two Paths as params
-def pathsCross(p1, p2):
-    for i in range(0, len(p1.route)):
-        for j in range(0, len(p2.route)):
-            if i.equals(j):
-                cross = (i, j)
-            else:
-                cross = (-1, -1)
-    return cross
-
-# returns a tuple containing two Path objects
-# takes two Path objects as params
-def breed(p1, p2):
-    child1 = list()
-    child2 = list()
-    parent1 = p1.route
-    parent2 = p2.route
-    crosspt = pathsCross(p1, p2)
-    if crosspt != (-1, -1):
-        child1.append(parent1[:crosspt[0]])
-        child1.append(parent2[crosspt[1]:])
-        child2.append(parent2[:crosspt[1]])
-        child2.append(parent1[crosspt[0]:])
-
-    return Path(child1), Path(child2)
-
-def prevDir(n1, n2):
+def prevDir(n1, n2):                # Finds the direction a path takes
     xChange = n2.x - n1.x
     yChange = n2.y - n1.y
-
     if xChange == 1:
         if yChange == 1:
             return Direction.BOTTOM_RIGHT
@@ -118,12 +94,41 @@ def prevDir(n1, n2):
             return Direction.LEFT
         elif yChange == -1:
             return Direction.TOP_LEFT
+    else:
+        return Direction.TOP_RIGHT
+
+# returns index of the crossover point in p1 and in p2 as tuple
+# takes two Paths as params
+def pathsCross(p1, p2):
+    cross = (-1, -1)
+    for i in range(1, len(p1.route)):
+        for j in reversed(range(len(p2.route) -1 , 1 , -1)):
+            if p1.route[i] == p2.route[j]:
+                cross = (i, j)
+                print(cross)
+                return cross
+            else:
+                cross = (-1, -1)
+    print(cross)
+    return cross
+
+# returns a tuple containing two Path objects
+# takes two Path objects as params
+def breed(p1, p2):
+    child1 = list()
+    child2 = list()
+    parent1 = p1.route
+    parent2 = p2.route
+    crosspt = pathsCross(p1, p2)
+    if crosspt != (-1, -1):
+        child1 = parent1[:crosspt[0]] + parent2[crosspt[1]:]
+        child2 = parent2[:crosspt[1]] + parent1[crosspt[0]:]
+    return Path(child1), Path(child2)
 
 def mutate(p1, mutateFactor = 0.2):
-    print("mutating")
+    #print("mutating")
     for x in range(0, len(p1) - 1):
-        print(x)
-        if random.randint(1, 10) <= (mutateFactor * 10) and x - 1 >= 0 and x + 1 <= 49:
+        if random.randint(1, 10) <= (mutateFactor * 10) and x - 1 > 0 and x + 1 < 49:
             oldX = p1[x].x
             oldY = p1[x].y
             currentNode = p1[x]
@@ -252,14 +257,14 @@ def mutate(p1, mutateFactor = 0.2):
             cost = calcWeights(p1[x - 1], p1[x], p1[x+1])
             newCost = cost
 
-            if p1[x].x + xoffset >= 0 and p1[x].x + xoffset < 49 and \
-                    p1[x].y + yoffset >= 0 and p1[x].y + yoffset <= 49:
+            if p1[x].x + xoffset > 1 and p1[x].x + xoffset < 49 and \
+                    p1[x].y + yoffset > 1 and p1[x].y + yoffset < 49:
                 newNode = grid[p1[x].y + yoffset][p1[x].x + xoffset]
-                newCost = calcWeights(p1[x - 1], newNode, p1[x+1])
+                newCost = calcWeights(p1[x - 1], grid[newNode.y][newNode.x], p1[x+1])
 
                 if newCost < cost:
                     p1[x] = newNode
-                    print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
+                    #print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
 
 
 # Calculates the weights between nodes based on curvature,
@@ -336,9 +341,6 @@ def main():
             l += 1
         i += 1
 
-    print(grid[0][0].x)
-    print(grid[0][0].y)
-    print(grid[4][4].height)  # last node
     # read in data from file,
     # store data in 'graph'
     # Create starting population of paths via random walk
@@ -369,9 +371,8 @@ def main():
     startingPath = list()
     for i in range(startPop):
         lastNode = startNode
-
         startNode = grid[0][0]  # fist city here
-        endNode = grid[4][4]  # second city here
+        endNode = grid[4][4]    # second city here
         nodeToAdd = None
         #random.seed( 30 )
         while nodeToAdd != endNode:
@@ -413,20 +414,35 @@ def main():
         pop.append(Path(startingPath))
         startingPath = []
 
-    print(len(pop[0].route))
     #print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
 
 
-
-
-    print("Original")
+    print(len(pop))
+    print("Original p[0] - " + str(len(pop[0].route)))
     print(pop[0].printPath())
-    print("Cleaned Up")
-    cleanup(pop[0].route)
-    print("Mutated")
-    mutate(pop[0].route, 100000000)
-    print("Cross p[0] and p[1]")
-    p[5].route, p[6].route = pathsCross(p[0].route, p[1].route)
+
+    print("Original p[1] - " + str(len(pop[1].route)))
+    print(pop[1].printPath())
+
+    for x in range(len(pop)):
+        pop[x].route = cleanup(pop[x].route)
+
+    print("Cleaned Up p[0] - " + str(len(pop[0].route)))
+    print(pop[0].printPath())
+
+    print("Cleaned Up p[1] - " + str(len(pop[1].route)))
+    print(pop[1].printPath())
+
+
+    pop[2], pop[3] = breed(pop[0], pop[1])
+    print("Crossed Over p[2] - " + str(len(pop[2].route)))
+    print(pop[2].printPath())
+
+    print("Crossed Over p[3] - " + str(len(pop[3].route)))
+    print(pop[3].printPath())
+
+
+
 
 
 
