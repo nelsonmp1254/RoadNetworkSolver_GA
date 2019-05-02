@@ -318,7 +318,7 @@ def calcWeights(node1, node2, node3, dataPointOffset = 100, distWeight = 0.3, in
     else:
         travelTime = dist / 65
     # add in cost of the road and curvature factors
-    sum += dist * COST_PER_MILE * costWeight + travelTime
+    sum += dist * (COST_PER_MILE / 5280) * costWeight + travelTime
     return sum
 
 def main():
