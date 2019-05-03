@@ -6,6 +6,8 @@ import numpy
 import math
 
 grid = []
+
+
 # create a lovely enum to hold directions in
 class Direction(Enum):
     TOP = 90
@@ -16,6 +18,7 @@ class Direction(Enum):
     BOTTOM_LEFT = 225
     LEFT = 180
     TOP_LEFT = 135
+    NOCHANGE = -1
 
     def __int__(self):
         return self.value
@@ -27,27 +30,37 @@ class Node:
         self.x = x
         self.y = y
         self.height = height
+
     def toString(self):
         return "(" + str(self.x) + "," + str(self.y) + ")"
+
+Node1 = Node(0, 0, 0)
+Node2 = Node(0, 0, 0)
+Node3 = Node(0, 0, 0)
 
 # create custom Individual class
 class Path:
     # takes as args a list of Nodes
     def __init__(self, route):
         self.route = route
+
     def addToPath(self, n):
         self.route.append(n)
+
     def __iter__(self):
         return self
+
     def __next__(self):
         num = self.num
         self.num += 1
         return num
+
     def printPath(self):
         ret = ""
         for i in self.route:
             ret += i.toString() + " | "
         return ret
+
 
 def pathPrinter(p1):
     ret = ""
@@ -56,8 +69,7 @@ def pathPrinter(p1):
     return ret
 
 
-
-#Cleans up random walk. Eliminates loops. Variable effectiveness depending on the random walk
+# Cleans up random walk. Eliminates loops. Variable effectiveness depending on the random walk
 def cleanup(p1):
     i = 0
     while i < len(p1):
@@ -65,14 +77,15 @@ def cleanup(p1):
             for h in reversed(range(len(p1) - 1, 0, -1)):
                 if j < h and j < len(p1) and h < len(p1) and p1[h] == p1[j] and j != h:
                     p1 = p1[:j] + p1[h:]
-                    #print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
+                    # print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
                     i = 0
                     break
 
         i += 1
     return p1
 
-def prevDir(n1, n2):                # Finds the direction a path takes
+
+def prevDir(n1, n2):  # Finds the direction a path takes
     xChange = n2.x - n1.x
     yChange = n2.y - n1.y
     if xChange == 1:
@@ -94,23 +107,27 @@ def prevDir(n1, n2):                # Finds the direction a path takes
             return Direction.LEFT
         elif yChange == -1:
             return Direction.TOP_LEFT
+    elif xChange == 0 and yChange == 0:
+        return Direction.NOCHANGE
     else:
-        return Direction.TOP_RIGHT
+        return Direction.NOCHANGE
+
 
 # returns index of the crossover point in p1 and in p2 as tuple
 # takes two Paths as params
 def pathsCross(p1, p2):
     cross = (-1, -1)
-    for i in range(1, len(p1.route)):
-        for j in reversed(range(len(p2.route) -1 , 1 , -1)):
+    path1 = Path(p1.route)
+    n = len(p2.route)
+    for i in range(1, len(path1.route) - 1):
+        for j in reversed(range(len(p2.route) - 1, 1, -1) ) :
             if p1.route[i] == p2.route[j]:
                 cross = (i, j)
-                print(cross)
                 return cross
             else:
                 cross = (-1, -1)
-    print(cross)
     return cross
+
 
 # returns a tuple containing two Path objects
 # takes two Path objects as params
@@ -125,64 +142,65 @@ def breed(p1, p2):
         child2 = parent2[:crosspt[1]] + parent1[crosspt[0]:]
     return Path(child1), Path(child2)
 
-def mutate(p1, mutateFactor = 0.2):
-    #print("mutating")
-    for x in range(0, len(p1) - 1):
+
+def mutate(p1, mutateFactor=0.1):
+    # print("mutating")
+    for x in range(len(p1) - 1 ):
         if random.randint(1, 10) <= (mutateFactor * 10) and x - 1 > 0 and x + 1 < 49:
             oldX = p1[x].x
             oldY = p1[x].y
             currentNode = p1[x]
-            nextNode = p1[x+1]
-            pDir = prevDir(p1[x-1], p1[x])
-            cDir = prevDir(p1[x], p1[x+1])
+            nextNode = p1[x + 1]
+            pDir = prevDir(p1[x - 1], p1[x])
+            cDir = prevDir(p1[x], p1[x + 1])
             global grid
             xoffset = 0
             yoffset = 0
             if ((pDir == Direction.TOP and cDir == Direction.TOP) or \
-                     (pDir == Direction.BOTTOM and cDir == Direction.BOTTOM)):                              #  |
-                flag = random.randint(0, 1)                                                                 #  |
+                    (pDir == Direction.BOTTOM and cDir == Direction.BOTTOM)):  # |
+                flag = random.randint(0, 1)  # |
                 if (flag == 1):
                     xoffset = 1
                 else:
                     xoffset = -1
             elif ((pDir == Direction.RIGHT and cDir == Direction.RIGHT) or \
-                    (pDir == Direction.LEFT and cDir == Direction.LEFT)):             # --
+                  (pDir == Direction.LEFT and cDir == Direction.LEFT)):  # --
                 flag = random.randint(0, 1)
                 if (flag == 1):
                     yoffset = 1
                 else:
                     yoffset = -1
             elif ((pDir == Direction.RIGHT and cDir == Direction.TOP) or \
-                  (pDir == Direction.BOTTOM and cDir == Direction.LEFT)):               # _|
+                  (pDir == Direction.BOTTOM and cDir == Direction.LEFT)):  # _|
                 yoffset = -1
                 xoffset = -1
             elif ((pDir == Direction.BOTTOM_LEFT and cDir == Direction.TOP) or \
-                  (pDir == Direction.BOTTOM and cDir == Direction.TOP_LEFT)):             # \|
+                  (pDir == Direction.BOTTOM and cDir == Direction.TOP_LEFT)):  # \|
                 yoffsef = 0
                 xoffset = -1
             elif ((pDir == Direction.TOP_RIGHT and cDir == Direction.BOTTOM_RIGHT) or \
-                   (pDir == Direction.TOP_LEFT and cDir == Direction.BOTTOM_LEFT)):             #/\
+                  (pDir == Direction.TOP_LEFT and cDir == Direction.BOTTOM_LEFT)):  # /\
                 yoffset = 1
                 xoffset = 0
             elif ((pDir == Direction.RIGHT and cDir == Direction.BOTTOM) or \
-                  (pDir == Direction.TOP and cDir == Direction.LEFT)):                  # -
-                yoffset = 1                                                             #  |
+                  (pDir == Direction.TOP and cDir == Direction.LEFT)):  # -
+                yoffset = 1  # |
                 xoffset = -1
             elif ((pDir == Direction.BOTTOM_LEFT and cDir == Direction.RIGHT) or \
-                  (pDir == Direction.LEFT and cDir == Direction.TOP_RIGHT)):                # /_
+                  (pDir == Direction.LEFT and cDir == Direction.TOP_RIGHT)):  # /_
                 yoffset = -1
                 xoffset = 0
 
-            elif(( pDir == Direction.BOTTOM_LEFT and cDir == Direction.BOTTOM_RIGHT) or \
-                 (pDir == Direction.TOP_LEFT and cDir == Direction.TOP_RIGHT)):
+            elif ((pDir == Direction.BOTTOM_LEFT and cDir == Direction.BOTTOM_RIGHT) or \
+                  (pDir == Direction.TOP_LEFT and cDir == Direction.TOP_RIGHT)):
                 yoffset = 0
                 xoffset = 1
-            elif(( pDir == Direction.LEFT and cDir == Direction.BOTTOM_RIGHT) or \
-                 (pDir == Direction.TOP_LEFT and cDir == Direction.RIGHT)):
+            elif ((pDir == Direction.LEFT and cDir == Direction.BOTTOM_RIGHT) or \
+                  (pDir == Direction.TOP_LEFT and cDir == Direction.RIGHT)):
                 yoffset = 1
                 xoffset = 0
-            elif(( pDir == Direction.TOP and cDir == Direction.LEFT) or \
-                 (pDir == Direction.LEFT and cDir == Direction.BOTTOM)):
+            elif ((pDir == Direction.TOP and cDir == Direction.LEFT) or \
+                  (pDir == Direction.LEFT and cDir == Direction.BOTTOM)):
                 yoffset = 1
                 xoffset = 1
             # Begin Wyatt's segment of ifs
@@ -199,79 +217,96 @@ def mutate(p1, mutateFactor = 0.2):
             #  __/  and  \__
             elif ((pDir == Direction.RIGHT and cDir == Direction.TOP_RIGHT) \
                   or (pDir == Direction.LEFT and cDir == Direction.TOP_LEFT)) \
-                 or ((pDir == Direction.BOTTOM_LEFT and cDir == Direction.LEFT) \
-                     or (pDir == Direction.BOTTOM_RIGHT and cDir == Direction.RIGHT)):
+                    or ((pDir == Direction.BOTTOM_LEFT and cDir == Direction.LEFT) \
+                        or (pDir == Direction.BOTTOM_RIGHT and cDir == Direction.RIGHT)):
                 yoffset = -1
                 xoffset = 0
             # CASE
             # |       /
             #  \ and |
             elif (pDir == Direction.BOTTOM and cDir == Direction.BOTTOM_RIGHT) \
-                 or (pDir == Direction.TOP and cDir == Direction.TOP_RIGHT) \
-                 or (pDir == Direction.TOP_LEFT and cDir == Direction.TOP) \
-                 or (pDir == Direction.BOTTOM_LEFT and cDir == Direction.BOTTOM):
+                    or (pDir == Direction.TOP and cDir == Direction.TOP_RIGHT) \
+                    or (pDir == Direction.TOP_LEFT and cDir == Direction.TOP) \
+                    or (pDir == Direction.BOTTOM_LEFT and cDir == Direction.BOTTOM):
                 yoffset = 0
                 xoffset = 1
             # CASE
             # \       |
             #  | and /
             elif (pDir == Direction.BOTTOM_RIGHT and cDir == Direction.BOTTOM) \
-                 or (pDir == Direction.TOP and cDir == Direction.TOP_LEFT) \
-                 or (pDir == Direction.BOTTOM_LEFT and cDir == Direction.TOP) \
-                 or (pDir == Direction.BOTTOM and cDir == Direction.BOTTOM_LEFT):
+                    or (pDir == Direction.TOP and cDir == Direction.TOP_LEFT) \
+                    or (pDir == Direction.BOTTOM_LEFT and cDir == Direction.TOP) \
+                    or (pDir == Direction.BOTTOM and cDir == Direction.BOTTOM_LEFT):
                 yoffset = 0
                 xoffset = -1
             # CASE
             # |\
             elif (pDir == Direction.TOP and cDir == Direction.BOTTOM_RIGHT) \
-                 or (pDir == Direction.TOP_LEFT and cDir == Direction.BOTTOM):
+                    or (pDir == Direction.TOP_LEFT and cDir == Direction.BOTTOM):
                 yoffset = 0
                 xoffset = 1
             # CASE
             # /\ 90
             elif (pDir == Direction.TOP_RIGHT and cDir == Direction.BOTTOM_RIGHT) \
-                 or (pDir == Direction.TOP_LEFT and cDir == Direction.BOTTOM_LEFT):
+                    or (pDir == Direction.TOP_LEFT and cDir == Direction.BOTTOM_LEFT):
                 yoffset = 1
                 xoffset = 0
             # CASE
             # \/ 90
             elif (pDir == Direction.BOTTOM_RIGHT and cDir == Direction.TOP_RIGHT) \
-                 or (pDir == Direction.BOTTOM_LEFT and cDir == Direction.TOP_LEFT):
+                    or (pDir == Direction.BOTTOM_LEFT and cDir == Direction.TOP_LEFT):
                 yoffset = -1
                 xoffset = 0
             # CASE
             # __
             #  /
             elif (pDir == Direction.RIGHT and cDir == Direction.BOTTOM_LEFT) \
-                 or (pDir == Direction.TOP_RIGHT and cDir == Direction.LEFT):
+                    or (pDir == Direction.TOP_RIGHT and cDir == Direction.LEFT):
                 yoffset = 1
                 xoffset = 0
             # CASE
             # \ 90
             # /
             elif (pDir == Direction.BOTTOM_RIGHT and cDir == Direction.BOTTOM_LEFT) \
-                 or (pDir == Direction.TOP_RIGHT and cDir == Direction.TOP_LEFT):
+                    or (pDir == Direction.TOP_RIGHT and cDir == Direction.TOP_LEFT):
                 yoffset = 0
                 xoffset = -1
-
-            cost = calcWeights(p1[x - 1], p1[x], p1[x+1])
+            cost = calcWeights(p1[x], p1[x - 1], p1[x - 2])
             newCost = cost
-
             if p1[x].x + xoffset > 1 and p1[x].x + xoffset < 49 and \
-                    p1[x].y + yoffset > 1 and p1[x].y + yoffset < 49:
-                newNode = grid[p1[x].y + yoffset][p1[x].x + xoffset]
-                newCost = calcWeights(p1[x - 1], grid[newNode.y][newNode.x], p1[x+1])
+                    p1[x].y + yoffset > 1 and p1[x].y + yoffset < 49 and \
+                    x - 1 > 0 and x + 1 < 49:
 
+                newCost = calcWeights(p1[x - 1], grid[p1[x].y + yoffset][p1[x].x + xoffset], p1[x + 1])
                 if newCost < cost:
-                    p1[x] = newNode
-                    #print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
+                    p1[x] = grid[p1[x].y + yoffset][p1[x].x + xoffset]
+                    # print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
 
+#Calculate the cost of the full path
+def calcCost(path):
+    cost = 0
+    cost += calcWeights(path.route[1], path.route[0], path.route[0])
+    for i in range(2, len(path.route)): #cost += calcWeights(path.route[i], path.route[i], path.route[i])
+        cost += calcWeights(path.route[i], path.route[i - 1], path.route[i-2])
+    return cost
+
+def sortPaths(paths):
+    for i in range(len(paths)):
+        for j in range(0, len(paths)-i-1):
+            if calcCost(paths[j]) > calcCost(paths[j+1]):
+                paths[j], paths[j + 1] = paths[j + 1], paths[j]
+    return paths
+
+def cull(paths, startPop = 20):
+    paths = sortPaths(paths)
+    return paths[:startPop]
 
 # Calculates the weights between nodes based on curvature,
 # distance, travel time, and cost to create
 # dataPointOffset is the real-world distance between two data points on the same orthogonal line IN FEET
 # distWeight, timeWeight, and costWeight must sum to 1.0
-def calcWeights(node1, node2, node3, dataPointOffset = 100, distWeight = 0.3, inclWeight = 0.2, costWeight = 0.2):
+def calcWeights(node1, node2, node3, dataPointOffset=100, distWeight=0.3, inclWeight=0.2, costWeight=0.2):
+    # node3 is previous node - only used for direction change
     # Average cost of a mile of 4-land divided highway through semi-urban
     # and non-mountainous terrain
     # See https://www.arkansashighways.com/roadway_design_division/Cost%20per%20Mile%20(JULY%202014).pdf
@@ -285,16 +320,19 @@ def calcWeights(node1, node2, node3, dataPointOffset = 100, distWeight = 0.3, in
     grade = abs(int(node1.height) - int(node2.height))
     xdiff = abs(node1.x - node2.x) * dataPointOffset
     ydiff = abs(node1.y - node2.y) * dataPointOffset
-    dist = (xdiff)**2 + (ydiff)**2
-    if(dist < 1):
+    dist = (xdiff) ** 2 + (ydiff) ** 2
+    if (dist < 1):
         dist = 1
     dist = math.sqrt(dist)
-    grade = (grade / dist) * 100 # grade as percentage
+    grade = (grade / dist) * 100  # grade as percentage
 
     sum = dist * distWeight + grade * inclWeight
 
     # difference in road angles: higher = less direct route
-    curve = abs(prevDir(node1, node2).value - prevDir(node2, node3).value) % 360
+    if( node2.x != node3.x and node2.y != node3.y and node1.x != node2.x and node1.y != node2.y):
+        curve = abs(prevDir(node1, node2).value - prevDir(node2, node3).value) % 360
+    else:
+        curve = 0
     cfactor = (360 - curve) if curve > 180 else curve
 
     # calculate highway segment speed based on curvature
@@ -310,8 +348,8 @@ def calcWeights(node1, node2, node3, dataPointOffset = 100, distWeight = 0.3, in
     # R = 2740
     # vsquared = 15 * (f + 0.06) * R
     # v = math.sqrt(vsquared)
-    CURVE_SPEED = 53.64 # determined by above calculations
-    if cfactor > 0: # if road curves
+    CURVE_SPEED = 53.64  # determined by above calculations
+    if cfactor > 0:  # if road curves
         # reduce speed to curve speed
         travelTime = dist / CURVE_SPEED
         COST_PER_MILE *= 1.1
@@ -320,6 +358,25 @@ def calcWeights(node1, node2, node3, dataPointOffset = 100, distWeight = 0.3, in
     # add in cost of the road and curvature factors
     sum += dist * (COST_PER_MILE / 5280) * costWeight + travelTime
     return sum
+
+#Mutate > Breed > Cleanup
+
+def createNextGen(paths):
+    for i in range(len(paths)):
+        path = Path(paths[i].route)
+        mutate(path.route)             #Mutates Path
+    n = len(paths)
+    for j in range(n - 1):                         #Breeds Paths
+        for k in range(n - 1) :
+            newPath1, newPath2 = breed(Path(paths[j].route), Path(paths[k].route))
+            paths.append(Path(newPath1.route))
+            paths.append(Path(newPath2.route))
+
+    for h in range(len(paths)):                         #cleanup
+        paths[h] = Path(cleanup(paths[h].route))
+
+    paths = cull(paths, 20)
+    return paths
 
 def main():
     # Node Generation
@@ -351,11 +408,13 @@ def main():
     mutProb = 0.2
     generations = 0
     pop = list()
-    startPop = 20 # starting population size
+    startPop = 20  # starting population size
 
-    startNode = grid[0][0] # fist city here
-    endNode = grid[4][4] # second city here
-    
+    startNode = grid[0][0]  # fist city here
+    Node1 = startNode
+    endNode = grid[49][49]  # second city here
+    Node2 = endNode
+
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
     nodeToAdd = None
@@ -372,79 +431,58 @@ def main():
     for i in range(startPop):
         lastNode = startNode
         startNode = grid[0][0]  # fist city here
-        endNode = grid[4][4]    # second city here
+        endNode = grid[49][49]  # second city here
         nodeToAdd = None
         #random.seed( 30 )
         while nodeToAdd != endNode:
             dir = random.randint(0, 7)
             xoffset = 0
             yoffset = 0
-            if dir == 0 :
+            if dir == 0:
                 xoffset = 0
                 yoffset = -1
-            elif dir == 1 :
+            elif dir == 1:
                 xoffset = 1
                 yoffset = -1
-            elif dir == 2 :
+            elif dir == 2:
                 xoffset = 1
                 yoffset = 0
-            elif dir == 3 :
+            elif dir == 3:
                 xoffset = 1
                 yoffset = 1
-            elif dir == 4 :
+            elif dir == 4:
                 xoffset = 0
                 yoffset = 1
-            elif dir == 5 :
+            elif dir == 5:
                 xoffset = -1
                 yoffset = 1
-            elif dir == 6 :
+            elif dir == 6:
                 xoffset = -1
                 yoffset = 0
-            elif dir == 7 :
+            elif dir == 7:
                 xoffset = -1
                 yoffset = -1
             else:
                 xoffset = 1
                 yoffset = 1
-            if lastNode.x + xoffset < 5 and lastNode.x + xoffset > 0:
-                if lastNode.y + yoffset < 5 and lastNode.y + yoffset > 0:
+            if lastNode.x + xoffset < 50 and lastNode.x + xoffset > 0:
+                if lastNode.y + yoffset < 50 and lastNode.y + yoffset > 0:
                     nodeToAdd = grid[lastNode.y + yoffset][lastNode.x + xoffset]
                     lastNode = nodeToAdd
                     startingPath.append(nodeToAdd)
         pop.append(Path(startingPath))
         startingPath = []
 
-    #print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
+    # print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
 
 
     print(len(pop))
-    print("Original p[0] - " + str(len(pop[0].route)))
-    print(pop[0].printPath())
-
-    print("Original p[1] - " + str(len(pop[1].route)))
-    print(pop[1].printPath())
-
-    for x in range(len(pop)):
-        pop[x].route = cleanup(pop[x].route)
-
-    print("Cleaned Up p[0] - " + str(len(pop[0].route)))
-    print(pop[0].printPath())
-
-    print("Cleaned Up p[1] - " + str(len(pop[1].route)))
-    print(pop[1].printPath())
+    print(calcCost(pop[0]))
+    pop = createNextGen(pop)
+    print(len(pop))
+    print(calcCost(pop[0]))
 
 
-    pop[2], pop[3] = breed(pop[0], pop[1])
-    print("Crossed Over p[2] - " + str(len(pop[2].route)))
-    print(pop[2].printPath())
-
-    print("Crossed Over p[3] - " + str(len(pop[3].route)))
-    print(pop[3].printPath())
-
-
-
-
-
-
+    #(1,1) | (2,1) | (3,2) | (3,3) | (4,2) | (4,3) | (4,4) |
 if __name__ == "__main__":
     main()
