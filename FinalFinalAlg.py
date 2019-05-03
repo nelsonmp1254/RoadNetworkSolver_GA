@@ -2,29 +2,12 @@
 from enum import Enum
 import csv
 import random
-import numpy
+import matplotlib.pyplot as plt
 import math
-
-grid = []
-
-
-# create a lovely enum to hold directions in
-class Direction(Enum):
-    TOP = 90
-    TOP_RIGHT = 45
-    RIGHT = 0
-    BOTTOM_RIGHT = 315
-    BOTTOM = 270
-    BOTTOM_LEFT = 225
-    LEFT = 180
-    TOP_LEFT = 135
-    NOCHANGE = -1
-
-    def __int__(self):
-        return self.value
+import time
 
 
-# create Node class
+# create Node class - X, Y, Height
 class Node:
     def __init__(self, x, y, height):
         self.x = x
@@ -34,11 +17,27 @@ class Node:
     def toString(self):
         return "(" + str(self.x) + "," + str(self.y) + ")"
 
-Node1 = Node(0, 0, 0)
-Node2 = Node(0, 0, 0)
-Node3 = Node(0, 0, 0)
+#Reads in a text file of data (fakeElevationData.txt) and inserts this into a Rectangular Array of Nodes
+#These nodes are then used in a random walk algorithm for travel from point A to point B
+width = 10
+height = 10
+blank = Node(0,0,0)
+grid = []
+grid = [[blank for x in range(width)] for y in range(height)]
+with open("fakeElevationData.txt") as file:
+    reader = csv.reader(file, delimiter="\t")
+    d = list(reader)
+i = 0  # height / y
+for k in d:
+    l = 0  # width / x
+    for j in k:
+        grid[i][l] = Node(l, i, d[i][l])
+        l += 1
+    i += 1
+midNode = grid[5][5]
+endNode = grid[9][9]
 
-# create custom Individual class
+# create custom Individual class. Wrapper for a 'route', or a list of paths
 class Path:
     # takes as args a list of Nodes
     def __init__(self, route):
@@ -61,7 +60,45 @@ class Path:
             ret += i.toString() + " | "
         return ret
 
+#Checks if a path contains a node. Returns true or false
+def contains(path, node = grid[5][5]):
+    for x in path:
+        if x == node:
+            return True
+    return False
 
+def cleanup(p1, midNode = grid[5][5], endNode = grid[9][9]):
+    i = 0
+    while i < len(p1):
+        for j in range(len(p1)):
+            for h in reversed(range(len(p1) - 1, 0, -1)):
+                if j < h and j < len(p1) and h < len(p1) and p1[h] == p1[j] and j != h:
+
+                    newPath = p1[:j] + p1[h:]
+                    if contains(newPath, midNode) and contains(newPath, endNode):
+                        i = 0
+                        p1 = newPath
+                        break
+                    #p1 = p1[:j] + p1[h:]
+        i += 1
+    return p1
+
+# create a lovely enum to hold directions in
+class Direction(Enum):
+    TOP = 90
+    TOP_RIGHT = 45
+    RIGHT = 0
+    BOTTOM_RIGHT = 315
+    BOTTOM = 270
+    BOTTOM_LEFT = 225
+    LEFT = 180
+    TOP_LEFT = 135
+    NOCHANGE = -1
+
+    def __int__(self):
+        return self.value
+
+#Returns a string containing all the nodes in a path, formatted for readability
 def pathPrinter(p1):
     ret = ""
     for i in p1.route:
@@ -70,22 +107,10 @@ def pathPrinter(p1):
 
 
 # Cleans up random walk. Eliminates loops. Variable effectiveness depending on the random walk
-def cleanup(p1):
-    i = 0
-    while i < len(p1):
-        for j in range(len(p1)):
-            for h in reversed(range(len(p1) - 1, 0, -1)):
-                if j < h and j < len(p1) and h < len(p1) and p1[h] == p1[j] and j != h:
-                    p1 = p1[:j] + p1[h:]
-                    # print("h : " + str(h) + ", i : " + str(i) + ", j : " + str(j))
-                    i = 0
-                    break
-
-        i += 1
-    return p1
 
 
-def prevDir(n1, n2):  # Finds the direction a path takes
+#Finds the change in direction between two nodes
+def prevDir(n1, n2):
     xChange = n2.x - n1.x
     yChange = n2.y - n1.y
     if xChange == 1:
@@ -131,7 +156,7 @@ def pathsCross(p1, p2):
 
 # returns a tuple containing two Path objects
 # takes two Path objects as params
-def breed(p1, p2):
+def breed(p1, p2, midNode = grid[5][5], endNode = grid[9][9]):
     child1 = list()
     child2 = list()
     parent1 = p1.route
@@ -140,13 +165,18 @@ def breed(p1, p2):
     if crosspt != (-1, -1):
         child1 = parent1[:crosspt[0]] + parent2[crosspt[1]:]
         child2 = parent2[:crosspt[1]] + parent1[crosspt[0]:]
-    return Path(child1), Path(child2)
+    if contains(child1, midNode) and contains(child1, endNode) and contains(child2, midNode) and contains(child2, endNode) :
+        return Path(child1), Path(child2)
+    else:
+        return -1, -1
 
-
-def mutate(p1, mutateFactor=0.1):
-    # print("mutating")
+#Iterates through a path, has a random chance to 'mutate' each node.
+#Defaults currently to 10% per node
+#Each mutate has a chance to replace a node in the path with an adjacent node.
+#Least optimized portion of algorithm
+def mutate(p1, mutateFactor=0.1, midNode = grid[5][5]):
     for x in range(len(p1) - 1 ):
-        if random.randint(1, 10) <= (mutateFactor * 10) and x - 1 > 0 and x + 1 < 49:
+        if random.randint(1, 10) <= (mutateFactor * 10) and x - 1 > 0 and x + 1 < 10 and p1[x] != midNode:
             oldX = p1[x].x
             oldY = p1[x].y
             currentNode = p1[x]
@@ -273,14 +303,13 @@ def mutate(p1, mutateFactor=0.1):
                 xoffset = -1
             cost = calcWeights(p1[x], p1[x - 1], p1[x - 2])
             newCost = cost
-            if p1[x].x + xoffset > 1 and p1[x].x + xoffset < 49 and \
-                    p1[x].y + yoffset > 1 and p1[x].y + yoffset < 49 and \
-                    x - 1 > 0 and x + 1 < 49:
+            if p1[x].x + xoffset > 1 and p1[x].x + xoffset < 10 and \
+                    p1[x].y + yoffset > 1 and p1[x].y + yoffset < 10 and \
+                    x - 1 > 0 and x + 1 < 10:
 
                 newCost = calcWeights(p1[x - 1], grid[p1[x].y + yoffset][p1[x].x + xoffset], p1[x + 1])
                 if newCost < cost:
                     p1[x] = grid[p1[x].y + yoffset][p1[x].x + xoffset]
-                    # print("Mutating x by : " + str(xoffset) + "   Mutating y by : " + str(yoffset) + " at " + "(" + str(oldX) +"," + str(oldY) + ")")
 
 #Calculate the cost of the full path
 def calcCost(path):
@@ -290,6 +319,7 @@ def calcCost(path):
         cost += calcWeights(path.route[i], path.route[i - 1], path.route[i-2])
     return cost
 
+#Sorts paths when given a list of paths (pop)
 def sortPaths(paths):
     for i in range(len(paths)):
         for j in range(0, len(paths)-i-1):
@@ -297,6 +327,7 @@ def sortPaths(paths):
                 paths[j], paths[j + 1] = paths[j + 1], paths[j]
     return paths
 
+#Sorts the paths, and then returns a list containing the X lowest cost paths. Defualts to 20
 def cull(paths, startPop = 20):
     paths = sortPaths(paths)
     return paths[:startPop]
@@ -360,60 +391,51 @@ def calcWeights(node1, node2, node3, dataPointOffset=100, distWeight=0.3, inclWe
     return sum
 
 #Mutate > Breed > Cleanup
-
+#Creates a list of new paths from a list of paths.
+#Mutates, then breeds, then culls the paths, returning a list of the same size.
+#Breeding makes all possible combinations of paths (ie. every crossing point)
+#Ideally, and with the test sample size, this ensures that no 'genetic diversity' is lost
 def createNextGen(paths):
     for i in range(len(paths)):
         path = Path(paths[i].route)
         mutate(path.route)             #Mutates Path
     n = len(paths)
-    for j in range(n - 1):                         #Breeds Paths
-        for k in range(n - 1) :
-            newPath1, newPath2 = breed(Path(paths[j].route), Path(paths[k].route))
-            paths.append(Path(newPath1.route))
-            paths.append(Path(newPath2.route))
-
+    for j in range(n):                         #Breeds Paths
+        for k in range(n) :
+            if(paths[j] is not None and paths[k] is not None):
+                breedingPath1 = paths[j]
+                breedingPath2 = paths[k]
+                newPath1 = Path([])
+                newPath2 = Path([])
+                if (isinstance(breedingPath1, Path) and isinstance(breedingPath2, Path)):
+                    newPath1, newPath2 = breed(breedingPath1, breedingPath2)
+                if(newPath1 != -1):
+                    paths.append(Path(newPath1.route))
+                    paths.append(Path(newPath2.route))
     for h in range(len(paths)):                         #cleanup
         paths[h] = Path(cleanup(paths[h].route))
 
     paths = cull(paths, 20)
     return paths
 
+
+#The random walk paths are cleaned up and sorted to display the shortest cost path
+#Then we generate new populations until the cost no longer changes, giving us our best path
+#Takes approximately 5 minutes to run in our worst case seen (Randomness makes this hard to guarantee).
 def main():
-    # Node Generation
-    width = 50
-    height = 50
-    blank = Node(0, 0, 0)
-    global grid
-    grid = [[blank for x in range(width)] for y in range(height)]
-    with open("testInput.txt") as file:
-        reader = csv.reader(file, delimiter="\t")
-        d = list(reader)
-
-    i = 0  # height / y
-    # print(d[9][11])
-    for k in d:
-        l = 0  # width / x
-        for j in k:
-            grid[i][l] = Node(l, i, d[i][l])
-            l += 1
-        i += 1
-
-    # read in data from file,
-    # store data in 'graph'
-    # Create starting population of paths via random walk
-    # Mutate paths
-    # Breeding (and culling) stage
-    # Profit
-    crossProb = 0.2
-    mutProb = 0.2
+    t0 = time.perf_counter()
+    # Keep track of fitness metrics for each generation
+    maxCostPerGen = list()
+    avgCostPerGen = list()
+    crossProb   = 0.2
+    mutProb     = 0.2
     generations = 0
-    pop = list()
-    startPop = 20  # starting population size
+    pop         = list()
+    startPop    = 20  # starting population size
 
     startNode = grid[0][0]  # fist city here
-    Node1 = startNode
-    endNode = grid[9][9]  # second city here
-    Node2 = endNode
+    midNode   = grid[5][5]  # mid city here
+    endNode   = grid[9][9]  # end city here
 
     # these are vars for dimensions of our array:
     # put actual data here after reading data in from file
@@ -426,15 +448,18 @@ def main():
     #     /    |    \
     #    5     4     3
     #
-
     startingPath = list()
+    startingPath.append(grid[0][0])
     for i in range(startPop):
-        lastNode = startNode
-        startNode = grid[0][0]  # fist city here
-        endNode = grid[9][9]  # second city here
-        nodeToAdd = None
-        #random.seed( 30 )
-        while nodeToAdd != endNode:
+        lastNode   = startNode
+        startNode  = grid[0][0]  # fist city here
+        midNode    = grid[5][5]    # middle city here
+        endNode    = grid[9][9]    # third city here
+        nodeToAdd  = None
+       # random.seed( 30 )
+        endFlag = True
+        midFlag = True
+        while endFlag or midFlag:
             dir = random.randint(0, 7)
             xoffset = 0
             yoffset = 0
@@ -468,21 +493,65 @@ def main():
             if lastNode.x + xoffset < 10 and lastNode.x + xoffset > 0:
                 if lastNode.y + yoffset < 10 and lastNode.y + yoffset > 0:
                     nodeToAdd = grid[lastNode.y + yoffset][lastNode.x + xoffset]
+                    if nodeToAdd == midNode:
+                        midFlag = False
+                    if nodeToAdd == endNode:
+                        endFlag = False
                     lastNode = nodeToAdd
                     startingPath.append(nodeToAdd)
+        endFlag = True
+        midFlag = True
         pop.append(Path(startingPath))
         startingPath = []
 
-    # print("x : " + str(pop[0].route[len(pop[0].route) - 1].x) + " y : " + str(pop[0].route[len(pop[0].route) - 1].y))
-
-
-    print(len(pop))
-    print(calcCost(pop[0]))
-    pop = createNextGen(pop)
     print(len(pop))
     print(calcCost(pop[0]))
 
+    flag = True
+    count = 0
+    prevMinCost = math.inf
+    print(str(prevMinCost))
+    while True:
+        listOfCosts = list()
+        count += 1
+        avg = 0
+        for i in pop:
+            c = calcCost(i)
+            avg += c
+            listOfCosts.append(c)
+        listOfCosts.sort(reverse=True)
+        maxCostPerGen.append(listOfCosts[0])
+        avgCostPerGen.append(avg / len(pop))
+        pop = createNextGen(pop)
+        print(str(count))
+        if calcCost(pop[0]) < prevMinCost:
+            prevMinCost = calcCost(pop[0])
+            count = 0
+        if count >= 5:
+            flag = False
+            break
 
-    #(1,1) | (2,1) | (3,2) | (3,3) | (4,2) | (4,3) | (4,4) |
+    print('COUNT:' + str(count))
+    print(len(pop))
+    print(calcCost(pop[0]))
+    # Print analytics information
+    t1 = time.perf_counter()
+    print("Run time: " + str(t1 - t0) + " seconds (" + str((t1 - t0) / 60) + " minutes)")
+    # Code for max cost / generation graph
+    # plt.plot(maxCostPerGen)
+    plt.plot(maxCostPerGen)
+    plt.plot(avgCostPerGen)
+    plt.ylabel('Cost($)')
+    plt.xlabel('Generation')
+    plt.legend(['Max Cost', 'Average Cost'], loc='upper left')
+    plt.show()
+
+    # Code for average cost / generation graph
+    # plt.plot(avgCostPerGen)
+    # plt.ylabel('Average Cost')
+    # plt.xlabel('Generation')
+    # plt.show
+
+
 if __name__ == "__main__":
     main()
